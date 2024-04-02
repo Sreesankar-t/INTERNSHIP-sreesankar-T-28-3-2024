@@ -28,17 +28,13 @@ const classCreation = async (req, res, next) => {
 
 const updateStudentClass = async (req, res, next) => {
   try {
-    const availableClass = await Class.find()
     const class1 = await Class.findOne(req.body)
     if (!class1) {
       res.status(200).json({
-        message: 'class not exist ',
-        Avialble_class: availableClass
+        message: `class not exist standard ${req.body.standard} and division ${req.body.division} `
       })
     }
-
     let ClassId = class1._id
-
     const student = await Student.findByIdAndUpdate(
       req.params.id,
       { $set: { classId: ClassId } },
@@ -99,7 +95,7 @@ const getStudentStandAndDivision = async (req, res, next) => {
   }
 }
 
-// real all studend based on the standard
+// get all studend based on the standard
 const getStudentsBasedonStandard = async (req, res, next) => {
   try {
     const { standard } = req.body
