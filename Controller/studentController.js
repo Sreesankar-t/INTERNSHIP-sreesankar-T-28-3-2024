@@ -24,26 +24,30 @@ const classCreation = async (req, res, next) => {
   }
 }
 
-// update student details
+// update student class
 
-const updateStudentDetails = async (req, res, next) => {
+const updateStudentClass = async (req, res, next) => {
   try {
-    const updateStudent = await Student.findByIdAndUpdate(
-      req.params.id,
-      { $set: req.body },
-      { new: true }
-    )
+    const availableClass = await Class.find()
+    const class1 = await Class.findOne(req.body)
+    if (!class1) {
+      res.status(200).json({
+        message: 'class not exist ',
+        Avialble_class: availableClass
+      })
+    }
 
-    const updateClass = await Class.findByIdAndUpdate(
-      updateStudent.classId,
-      { $set: { standard: req.body.standard, division: req.body.division } },
+    let ClassId = class1._id
+
+    const student = await Student.findByIdAndUpdate(
+      req.params.id,
+      { $set: { classId: ClassId } },
       { new: true }
     )
 
     res.status(200).json({
       message: 'Successfully updated',
-      updatedStudent: updateStudent,
-      updatedClass: updateClass
+      student
     })
   } catch (error) {
     next(error)
@@ -77,7 +81,15 @@ const deleteClass = async (req, res, next) => {
 
 const getStudentStandAndDivision = async (req, res, next) => {
   try {
-    const student = await Student.find({ classId: req.params.id })
+    const class1 = await Class.findOne(req.body)
+    if (!class1) {
+      res.status(200).json({
+        message: 'class not exixst'
+      })
+    }
+    const classId = class1._id
+
+    const student = await Student.find({ classId: classId })
     res.status(200).json({
       message: 'get all student details based on the stadard and division',
       student
@@ -88,40 +100,16 @@ const getStudentStandAndDivision = async (req, res, next) => {
 }
 
 // real all studend based on the standard
-
 const getStudentsBasedonStandard = async (req, res, next) => {
   try {
-    const standard = Number(req.params.id)
-    const students = await Student.aggregate([
-      {
-        $addFields: {
-          classId: { $toObjectId: '$classId' } // Convert classId to ObjectId
-        }
-      },
-      {
-        $lookup: {
-          from: 'classes',
-          localField: 'classId',
-          foreignField: '_id',
-          as: 'class'
-        }
-      },
-      {
-        $match: {
-          'class.standard': standard
-        }
-      },
-      {
-        $project: {
-          _id: 1,
-          name: 1,
-          roll_no: 1,
-          mobile: 1,
-          'class.division': 1
-        }
-      }
-    ])
-
+    const { standard } = req.body
+    const objectIds = await Class.distinct('_id', { standard })
+    if (!objectIds || objectIds.length === 0) {
+      return res.status(404).json({
+        message: `No students found for standard ${standard}`,
+      })
+    }
+    const students = await Student.find({ classId: { $in: objectIds } })
     res.status(200).json({
       message: `Get all student details based on standard ${standard}`,
       students
@@ -133,7 +121,7 @@ const getStudentsBasedonStandard = async (req, res, next) => {
 
 export {
   studentRegister,
-  updateStudentDetails,
+  updateStudentClass,
   classCreation,
   deleteStudent,
   deleteClass,

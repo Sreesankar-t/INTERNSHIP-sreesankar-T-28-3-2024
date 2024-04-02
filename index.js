@@ -13,7 +13,7 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
 app.use('/user', router)
-app.subscribe(error)
+app.use(error)
 
 const dbConnection = () => {
   mongoose.connect(MONGO)
